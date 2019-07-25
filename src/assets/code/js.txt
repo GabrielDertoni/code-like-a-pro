@@ -1,0 +1,209 @@
+import Terminal from "./components/Terminal.vue";
+import TerminalError from "./components/TerminalError.vue";
+
+import code_cpp from "!raw-loader!./assets/code/cpp.txt";
+
+export default {
+  name: "app",
+  components: {
+    Terminal,
+    TerminalError
+  },
+  data() {
+    return {
+      code,
+      finished: false,
+      codeIndex: 0,
+      codeList: [
+        code_cpp,
+        code_js
+      ]
+    };
+  },
+  computed: {
+    platformSupport() {
+      return window.innerWidth > 800;
+    }
+  },
+  methods: {
+    getNextCode() {
+      if (this.codeIndex + 1 < this.codeList.length)
+        this.codeIndex++;
+      else
+        this.finished = true;
+    }
+  }
+};
+import Glitch from "./Glitch.vue";
+
+export default {
+  name: "Terminal",
+  components: {
+    Glitch
+  },
+  mounted() {
+    window.addEventListener("keydown", this.keydown);
+    setInterval(this.toggleCursor, this.cursorDelay);
+    setInterval(this.toggleContinue, this.cursorDelay);
+  },
+  props: {
+    code: Array
+  },
+  data() {
+    return {
+      char_index: 0,
+      line_index: 0,
+      supercode: 10,
+      cursorDelay: 400,
+      showCursor: true,
+      showContinue: true,
+      cursorPosition: "speed",
+      typed: ""
+    };
+  },
+  computed: {
+    showCode() {
+      let text = `\n> `;
+      for (let i = 0; i <= this.line_index; i++) {
+        if (i >= this.line_index) {
+          text = text + this.code[i].substr(0, this.char_index);
+        } else {
+          text = text + this.code[i] + "\n> ";
+        }
+      }
+      if (this.cursorPosition === "terminal") return text + this.cursor;
+      else return text;
+    },
+    showSpeed() {
+      // const text_before = `\nSelect your coding speed (use the keyboard arrows ← →):`;
+      const text_before = `Select your coding speed (use the keyboard arrows <- ->):`;
+      const text_after = ` ${Math.round(((this.supercode + 1) / 10) * 100)}%`;
+      // [] if supercode is 0
+      // [>] if supercode is 1
+      // [====>] if supercode is 5, for example
+      // [==>█] if supercode is 3 and has the cursor on it.
+      let speed;
+      if (this.supercode <= 0) speed = `\n[`;
+      else speed = `\n[${"=".repeat(this.supercode - 1)}>`;
+
+      if (this.cursorPosition === "speed") speed = speed + this.cursor;
+
+      return text_before + speed + "]" + text_after;
+    },
+    continue_text() {
+      return this.showContinue ? `Press enter to execute.` : "";
+    },
+    cursor() {
+      // if (this.showCursor) return "█";
+      if (this.showCursor) return "_";
+      else return " ";
+    },
+    supercodeDelay() {
+      return 100 / this.supercode;
+    },
+    finished() {
+      if (
+        this.line_index >= this.code.length - 1 &&
+        this.char_index >= this.code[this.line_index].length
+      ) {
+        this.typed = "";
+        return true;
+      }
+      return false;
+    }
+  },
+  methods: {
+    keydown(e) {
+      if (e.key == "Backspace") {
+        this.prevChar();
+        if (this.supercode > 0) {
+          this.deleteSupercode();
+        }
+      } else if (e.key == "Enter" && this.finished) {
+        if (this.typed == "Y" || this.typed == "y") {
+          this.$emit("finished");
+        } else if ((this.typed = "N" || this.typed == "n")) {
+          this.line_index = 0;
+          this.char_index = 0;
+        }
+      } else if (e.key == "ArrowUp") {
+        this.selectSpeed();
+      } else if (e.key == "ArrowDown") {
+        this.selectCode();
+      } else if (e.key == "ArrowRight" && this.cursorPosition === "speed") {
+        this.supercode = Math.min(this.supercode + 1, 19);
+      } else if (e.key == "ArrowLeft" && this.cursorPosition === "speed") {
+        this.supercode = Math.max(this.supercode - 1, 0);
+      } else if (e.key == "Enter" && this.cursorPosition === "speed") {
+        this.selectCode();
+      } else if (this.cursorPosition === "terminal") {
+        this.nextChar();
+        if (this.supercode > 0) {
+          this.typeSupercode();
+        }
+      }
+      this.typed = e.key;
+    },
+    nextChar() {
+      if (
+        this.line_index == this.code.length - 1 &&
+        this.char_index == this.code[this.line_index].length
+      )
+        return;
+
+      do {
+        this.char_index++;
+        if (this.char_index > this.code[this.line_index].length) {
+          this.char_index = 0;
+          this.line_index = Math.min(this.line_index + 1, this.code.length - 1);
+        }
+      } while (this.code[this.line_index][this.char_index] === " ");
+
+      const el = document.getElementById("code");
+      if (this.char_index * 10 > el.clientWidth)
+        el.scrollLeft = this.char_index * 5;
+      else el.scrollLeft = 0;
+
+      el.scrollTop = el.scrollHeight;
+    },
+    prevChar() {
+      if (this.line_index == 0 && this.char_index == 0) return;
+
+      do {
+        this.char_index--;
+        if (this.char_index < 0) {
+          this.line_index = Math.max(this.line_index - 1, 0);
+          this.char_index = this.code[this.line_index].length;
+        }
+      } while (this.code[this.line_index][this.char_index] === " ");
+      // Scroll to the bottom of the page.
+      this.$el.scrollTo(0, this.$el.getBoundingClientRect().height);
+    },
+    async typeSupercode() {
+      for (let i = this.supercode; i > 0; i--) {
+        await new Promise(resolve => setTimeout(resolve, this.supercodeDelay));
+        this.nextChar();
+      }
+    },
+    async deleteSupercode() {
+      for (let i = this.supercode; i > 0; i--) {
+        await new Promise(resolve => setTimeout(resolve, this.supercodeDelay));
+        this.prevChar();
+      }
+    },
+    toggleCursor() {
+      this.showCursor = !this.showCursor;
+    },
+    toggleContinue() {
+      if (this.cursorPosition === "speed")
+        this.showContinue = !this.showContinue;
+      else this.showContinue = false;
+    },
+    selectSpeed() {
+      if (this.cursorPosition !== "speed") this.cursorPosition = "speed";
+    },
+    selectCode() {
+      if (this.cursorPosition !== "terminal") this.cursorPosition = "terminal";
+    }
+  }
+};
