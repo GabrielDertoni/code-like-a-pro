@@ -2,7 +2,7 @@
   <div class="terminal">
     <Glitch></Glitch>
     <div class="top-bar">
-      <h1>Code Like a Pro</h1>
+      <h1>Code Like a Pro V1</h1>
     </div>
     <pre id="code">
       <output>

@@ -2,10 +2,11 @@
   <div class="terminal">
     <Glitch></Glitch>
     <div class="top-bar">
-      <h1>Code Like a Pro</h1>
+      <h1>Code Like a Pro V1</h1>
     </div>
     <pre v-show="cursorPosition === 'speed'" id="speed">
-      <output>{{ showSpeed }}</output>
+      <output>Select your coding speed (use the keyboard arrows <- ->):</output>
+      <output>{{ showSpeed }} <span>{{ showSpeedPercentage }}</span></output>
       <output class="continue">{{ continue_text }}</output>
     </pre>
     <pre v-show="cursorPosition === 'terminal' && !finished" id="code">
@@ -36,7 +37,8 @@ export default {
     return {
       char_index: 0,
       line_index: 0,
-      supercode: 10,
+      supercode: 0,
+      maxSupercode: 5,
       cursorDelay: 400,
       showCursor: true,
       showContinue: true,
@@ -58,21 +60,17 @@ export default {
       else return text;
     },
     showSpeed() {
-      // const text_before = `\nSelect your coding speed (use the keyboard arrows ← →):`;
-      const text_before = `Select your coding speed (use the keyboard arrows <- ->):`;
-      const text_after = ` ${Math.round(((this.supercode + 1) / 10) * 100)}%`;
-      // [] if supercode is 0
-      // [>] if supercode is 1
+      // [>....] if supercode is 0
+      // [=>...] if supercode is 1
       // [====>] if supercode is 5, for example
-      // [==>█] if supercode is 3 and has the cursor on it.
-      let speed;
-      if (this.supercode <= 0) speed = `\n[`;
-      else speed = `\n[${"=".repeat(this.supercode - 1)}>`;
-
-      if (this.cursorPosition === "speed") speed = speed + this.cursor;
-
-      return text_before + speed + "]" + text_after;
+      // [==>..] if supercode is 3 and has the cursor on it.
+      const looksMult = 3;
+      if (this.supercode < this.maxSupercode)
+        return `\n[${"=".repeat(this.supercode * looksMult)}>${".".repeat((this.maxSupercode - this.supercode) * looksMult - 1)}]`;
+      else
+        return `\n[${"=".repeat(this.maxSupercode * looksMult)}]`;
     },
+    showSpeedPercentage() { return `${Math.round(((this.supercode + 1) / 4) * 100)}%` },
     continue_text() {
       return this.showContinue ? `Press enter to execute.` : "";
     },
@@ -114,7 +112,7 @@ export default {
       } else if (e.key == "ArrowDown") {
         this.selectCode();
       } else if (e.key == "ArrowRight" && this.cursorPosition === "speed") {
-        this.supercode = Math.min(this.supercode + 1, 19);
+        this.supercode = Math.min(this.supercode + 1, this.maxSupercode);
       } else if (e.key == "ArrowLeft" && this.cursorPosition === "speed") {
         this.supercode = Math.max(this.supercode - 1, 0);
       } else if (e.key == "Enter" && this.cursorPosition === "speed") {
