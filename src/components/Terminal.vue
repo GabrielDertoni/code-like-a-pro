@@ -5,7 +5,7 @@
       <h1>Code Like a Pro V1</h1>
     </div>
     <pre v-show="cursorPosition === 'speed'" id="speed">
-      <output>Select your coding speed (use the keyboard arrows <- ->):</output>
+      <output>Select your coding speed (use the keyboard arrows &lt;- -&gt;):</output>
       <output>{{ showSpeed }} <span>{{ showSpeedPercentage }}</span></output>
       <output class="continue">{{ continue_text }}</output>
     </pre>
